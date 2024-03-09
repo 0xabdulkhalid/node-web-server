@@ -1,36 +1,40 @@
-const http = require("http");
-const fs = require("fs");
+const express = require("express");
 const path = require("path");
 
-const hostname = "localhost";
-const port = "8080";
+const app = express();
+const port = 8080;
 
-const mimeTypes = {
-  ".html": "text/html",
-  ".css": "text/css",
-  ".png": "image/png",
-};
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
 
-const server = http.createServer((req, res) => {
-  let filePath = `.${req.url === "/" ? "/index" : req.url}`;
+app.use(express.static(path.join(__dirname, "assets")));
 
-  if (!path.extname(filePath)) {
-    filePath += ".html";
+app.get("/", (req, res) =>
+  res.render("layout", {
+    title: "Homepage (Index)",
+    header: "Homepage",
+  })
+);
+
+app.get("/:page(*)", (req, res) => {
+  const page = req.params.page;
+
+  if (
+    page.split("/").length > 1 ||
+    !["index", "contact", "about"].includes(page)
+  ) {
+    res.status(404).render("layout", {
+      title: "Not Found",
+      header: "404, Page not found",
+    });
   }
 
-  fs.readFile(filePath, (err, content) => {
-    if (err) {
-      fs.readFile("./404.html", (err, content) => {
-        res.writeHead(404, { "Content-type": "text/html" });
-        res.end(content, "utf-8");
-      });
-    } else {
-      res.writeHead(200, { "Content-type": mimeTypes[path.extname(filePath)] });
-      res.end(content, "utf-8");
-    }
+  res.render("layout", {
+    title: page,
+    header: page,
   });
 });
 
-server.listen(port, hostname, () => {
-  console.log(`Server is running at http://${hostname}:${port}`);
+app.listen(port, () => {
+  console.log(`Server is running at http://localhost:${port}`);
 });
